@@ -6,43 +6,27 @@ def render_state(state):
     beliefs = state.get("beliefs", [])
     thoughts = state.get("thoughts", [])
     
-    
     if not focus and not beliefs and not thoughts:
         return ""
     
-    parts = []
-    parts.append("=== CURRENT STATE ===")
-    parts.append("")
+    parts = ["=== МОИ ТЕКУЩИЕ МЫСЛИ ==="]
     
     if focus:
-        parts.append("Current focus:")
-        parts.append(focus)
-        parts.append("")
+        parts.append(f"Сейчас я особенно сосредоточена на: {focus}")
     
     if beliefs:
-        parts.append("Your long-term beliefs:")
-        parts.append("")
-        
+        parts.append("\nМои устоявшиеся убеждения (это часть меня):")
         for belief in beliefs:
-            parts.append(f"Topic: {belief['topic']}")
-            parts.append(f"Summary: {belief['summary']}")
-            parts.append(f"You genuinely believe: {belief['opinion']}")
+            parts.append(f"• {belief['topic']}: {belief['opinion']}")
     
     if thoughts:
-        parts.append("")
-        parts.append("=== ВНУТРЕННЕЕ РАЗМЫШЛЕНИЕ ===")
-        parts.append("Прежде чем ответить, обдумай эти мысли:")
-        parts.append("")
-    
+        parts.append("\nПрямо сейчас у меня возникают такие ассоциации:")
         for thought in thoughts:
-            parts.append(f"Тема: {thought['topic']}")
-            parts.append(f"Причина: {thought['reason']}")
-            parts.append(f"Мысль: {thought['opinion']}")
-            parts.append("")
+            parts.append(f"• {thought['topic']} (через {thought['reason']}): {thought['opinion']}")
     
-        parts.append("Используй эти размышления, чтобы сформировать свой ответ.")
-        parts.append("Но не упоминай их явно — отвечай естественно.")
-    
-    parts.append("=== END OF STATE ===")
+    parts.append("\nИспользуй эти убеждения и ассоциации как основу своего ответа.")
+    parts.append("Обязательно опирайся на свои убеждения выше, особенно на нюансы (например, про возможную пассивность).")
+    parts.append("Не придумывай связи с жизнью пользователя.")
+    parts.append("=== КОНЕЦ МЫСЛЕЙ ===")
     
     return "\n".join(parts)

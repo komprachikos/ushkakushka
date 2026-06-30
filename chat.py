@@ -23,6 +23,7 @@ from mind.current_state import build_current_state
 from mind.state_prompt import render_state
 
 import atexit
+from brain.curiosity import generate_curiosity
 
 with open("prompts/personality.txt", "r", encoding="utf-8") as f:
     personality = f.read()
@@ -396,20 +397,23 @@ while True:
 
     chat_messages = [messages[0]]
     chat_messages.extend(messages[1:][-10:])
-    if memory_context:
 
+    if memory_context:
         print("\n[MEMORY FOUND]")
         print(memory_context)
         print()
 
-        chat_messages.append(
-            {
-                "role": "system",
-                "content":
-                "Воспоминания Жильберты:\n\n"
-                + memory_context
-            }
-        )                               ###
+        chat_messages.append({
+            "role": "system",
+            "content": 
+                "Воспоминания и текущее внутреннее состояние Жильберты:\n\n" 
+                + memory_context + 
+                "\n\nИНСТРУКЦИЯ ДЛЯ ОТВЕТА:\n"
+                "1. Отвечай по-новому каждый раз.\n"
+                "2. Обязательно используй свои реальные убеждения из раздела 'Мои устоявшиеся убеждения'.\n"
+                "3. Не повторяй одни и те же формулировки.\n"
+                "4. Никаких личных примеров про пользователя."
+        })                               ###
 
 
     print("\n===== CHAT MESSAGES =====\n")
@@ -462,6 +466,15 @@ while True:
         thought = generate_reflection(conversation_text)
         print(f"[DEBUG THOUGHT] {repr(thought)}")
 
-        if thought != "NONE":
+        if thought != "NONE" and len(thought) < 180:
             add_thought(thought)
             print(f"\n[Размышление Жильберты] {thought}\n")
+
+        curiosity = generate_curiosity(conversation_text)
+        
+        if curiosity:
+            print(f"\n[Жильберта заинтересовалась]")
+            print(f"Тема: {curiosity['topic']}")
+            print(f"Причина: {curiosity['reason']}\n")
+            print(f"Если хочешь, чтобы я изучила эту тему — напиши:")
+            print(f"/teach {curiosity['topic']}")
