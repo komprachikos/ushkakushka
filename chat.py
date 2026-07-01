@@ -25,6 +25,7 @@ from mind.state_prompt import render_state
 import atexit
 from brain.curiosity import generate_curiosity
 
+
 with open("prompts/personality.txt", "r", encoding="utf-8") as f:
     personality = f.read()
 
