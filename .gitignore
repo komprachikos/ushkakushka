@@ -22,3 +22,6 @@ config_local.py
 
 .venv/
 data/embeddings.json
+# Логи
+logs/
+
