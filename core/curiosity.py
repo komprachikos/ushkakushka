@@ -1,43 +1,31 @@
-import json
-import os
+from pathlib import Path
+from core.atomic_json import safe_json_load, atomic_json_write
 
-FILE = "memory/curiosity.json"
+FILE = Path("memory/curiosity.json")
 
 
 def load_curiosity():
-
-    if not os.path.exists(FILE):
-        return []
-
-    with open(FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    return safe_json_load(FILE, default=[])
 
 
 def save_curiosity(data):
-
-    with open(FILE, "w", encoding="utf-8") as f:
-        json.dump(
-            data,
-            f,
-            ensure_ascii=False,
-            indent=2
-        )
+    atomic_json_write(FILE, data)
 
 
 def add_curiosity(topic, reason):
-
     curiosity = load_curiosity()
-
     for item in curiosity:
-
         if item["topic"].lower() == topic.lower():
             return
+    curiosity.append({"topic": topic, "reason": reason})
+    save_curiosity(curiosity)
 
-    curiosity.append(
-        {
-            "topic": topic,
-            "reason": reason
-        }
-    )
 
+def get_curiosity_list():
+    return load_curiosity()
+
+
+def remove_curiosity(topic):
+    curiosity = load_curiosity()
+    curiosity = [c for c in curiosity if c["topic"].lower() != topic.lower()]
     save_curiosity(curiosity)

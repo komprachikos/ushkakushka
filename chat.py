@@ -272,6 +272,8 @@ while True:
 
         curiosity = generate_curiosity(conversation_text)
         if curiosity:
+            from core.curiosity import add_curiosity
+            add_curiosity(curiosity['topic'], curiosity['reason'])
             print(f"\n[Жильберта заинтересовалась]")
             print(f"Тема: {curiosity['topic']}")
             print(f"Причина: {curiosity['reason']}\n")
