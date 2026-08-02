@@ -1,3 +1,4 @@
 ollama
 streamlit
 duckduckgo-search
+sentence-transformers

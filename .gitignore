@@ -19,3 +19,6 @@ config_local.py
 
 # Streamlit
 .streamlit/
+
+.venv/
+data/embeddings.json

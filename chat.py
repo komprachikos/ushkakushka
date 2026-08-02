@@ -16,6 +16,7 @@ from mind.current_state import build_current_state
 from mind.state_prompt import render_state
 from brain.curiosity import generate_curiosity
 import atexit
+from core.embeddings import ensure_topic_embedding
 
 
 saved_messages = load_memory()
@@ -47,6 +48,7 @@ def _handle_pending_reflection():
         opinion=pending["new_opinion"],
         related=pending.get("related", [])
     )
+    ensure_topic_embedding(pending["topic"])
     clear_pending_reflection()
     print("\nНовая версия мнения сохранена.\n")
     return True
@@ -62,6 +64,7 @@ def _handle_pending_study():
         opinion=pending["opinion"],
         related=pending.get("related", [])
     )
+    ensure_topic_embedding(pending["topic"])
     clear_pending()
     print("\nЗнание сохранено.\n")
     return True

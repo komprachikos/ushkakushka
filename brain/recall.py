@@ -1,8 +1,21 @@
-from core.knowledge import get_topics, get_knowledge
+from core.knowledge import get_knowledge
 from core.llm_client import llm_chat, LLMError
+from core.embeddings import ensure_all_embeddings, find_similar_topics
 
 
 def find_related_topics(user_text):
+    """
+    Семантический поиск: находит темы, ближайшие к запросу по смыслу.
+    Fallback на LLM, если эмбеддингов ещё нет (первый запуск).
+    """
+    ensure_all_embeddings()
+    results = find_similar_topics(user_text, top_k=5, threshold=0.25)
+
+    if results:
+        return [topic for topic, score in results]
+
+    # Fallback: если ничего не нашли, спрашиваем LLM
+    from core.knowledge import get_topics
     topics = get_topics()
     if not topics:
         return []
