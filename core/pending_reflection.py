@@ -1,41 +1,21 @@
 import json
 from pathlib import Path
-
+from core.atomic_json import safe_json_load, atomic_json_write
 
 FILE = Path("memory/pending_reflection.json")
 
 
 def save_pending_reflection(data):
-
-    with open(
-        FILE,
-        "w",
-        encoding="utf-8"
-    ) as f:
-
-        json.dump(
-            data,
-            f,
-            ensure_ascii=False,
-            indent=2
-        )
+    atomic_json_write(FILE, data)
 
 
 def load_pending_reflection():
-
-    if not FILE.exists():
+    data = safe_json_load(FILE, default=None)
+    if data == {}:
         return None
-
-    with open(
-        FILE,
-        "r",
-        encoding="utf-8"
-    ) as f:
-
-        return json.load(f)
+    return data
 
 
 def clear_pending_reflection():
-
     if FILE.exists():
         FILE.unlink()

@@ -1,37 +1,26 @@
 import json
 from pathlib import Path
-
+from core.atomic_json import safe_json_load, atomic_json_write
 
 PROFILE_FILE = Path("data/user_profile.json")
 
+
 def load_profile():
-    try:
-        with open(PROFILE_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except:
-        return {
-            "name": "",
-            "facts": []
-        }
-    
+    return safe_json_load(PROFILE_FILE, default={"name": "", "facts": []})
+
+
 def save_profile(profile):
-    with open(PROFILE_FILE, "w", encoding="utf-8") as f:
-        json.dump(profile, f, ensure_ascii=False, indent=2)
+    atomic_json_write(PROFILE_FILE, profile)
+
 
 def add_fact(fact):
     profile = load_profile()
-
     normalized_new = normalize_fact(fact)
-
-    existing = {
-        normalize_fact(item)
-        for item in profile["facts"]
-    }
-
+    existing = {normalize_fact(item) for item in profile.get("facts", [])}
     if normalized_new not in existing:
-        profile["facts"].append(fact)
+        profile.setdefault("facts", []).append(fact)
+        save_profile(profile)
 
-    save_profile(profile)
 
 def normalize_fact(text):
     return text.lower().strip().replace(".", "")

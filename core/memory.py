@@ -1,18 +1,12 @@
-import json
 from pathlib import Path
-
+from core.atomic_json import safe_json_load, atomic_json_write
 
 MEMORY_FILE = Path("data/memory.json")
 
 
 def load_memory():
-    try:
-        with open(MEMORY_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except:
-        return []
+    return safe_json_load(MEMORY_FILE, default=[])
 
 
 def save_memory(messages):
-    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(messages, f, ensure_ascii=False, indent=2)
+    atomic_json_write(MEMORY_FILE, messages)
