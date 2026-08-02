@@ -10,7 +10,7 @@ from core.journal import add_thought
 from core.curiosity import add_curiosity
 from core.profile_memory import add_fact
 from core.logger import logger
-from config import MAX_HISTORY, TEMPERATURE, REFLECTION_INTERVAL, THOUGHT_MAX_LEN
+from config import MAX_HISTORY, MAX_LLM_CONTEXT, TEMPERATURE, REFLECTION_INTERVAL, THOUGHT_MAX_LEN
 
 
 def process_message(messages, user_text, message_counter=0):
@@ -67,7 +67,7 @@ def process_message(messages, user_text, message_counter=0):
     # 6. Формируем сообщения для LLM: один system + последняя история user/assistant
     chat_messages = [{"role": "system", "content": full_system_prompt}]
     history = [m for m in local_messages[1:] if m["role"] in ("user", "assistant")]
-    chat_messages.extend(history[-MAX_HISTORY:])
+    chat_messages.extend(history[-MAX_LLM_CONTEXT:])
 
     logger.debug(f"Chat messages count: {len(chat_messages)}")
 
