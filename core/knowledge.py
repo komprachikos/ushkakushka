@@ -12,7 +12,7 @@ def load_knowledge():
         with open(KNOWLEDGE_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    except:
+    except (FileNotFoundError, json.JSONDecodeError) as e:
         return []
 
 
@@ -169,8 +169,6 @@ def get_reflections(topic):
 def get_related(topic):
 
     knowledge = get_knowledge(topic)
-
-    print(knowledge)
 
     if knowledge is None:
         return []

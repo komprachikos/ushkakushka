@@ -28,5 +28,8 @@ def render_state(state):
     parts.append("Обязательно опирайся на свои убеждения выше, особенно на нюансы (например, про возможную пассивность).")
     parts.append("Не придумывай связи с жизнью пользователя.")
     parts.append("=== КОНЕЦ МЫСЛЕЙ ===")
+
+    if state.get("recent_context"):
+        parts.append(f"\nКонтекст текущего разговора:\n{state['recent_context']}")
     
     return "\n".join(parts)
