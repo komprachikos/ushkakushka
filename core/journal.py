@@ -1,8 +1,9 @@
 from datetime import datetime
 from pathlib import Path
 from core.atomic_json import safe_json_load, atomic_json_write
+from core.paths import DATA_DIR
 
-JOURNAL_FILE = Path("data/journal.json")
+JOURNAL_FILE = DATA_DIR / "journal.json"
 
 
 def add_thought(thought):

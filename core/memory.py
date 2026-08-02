@@ -1,8 +1,9 @@
 from pathlib import Path
 from core.atomic_json import safe_json_load, atomic_json_write
 from config import MAX_HISTORY
+from core.paths import DATA_DIR
 
-MEMORY_FILE = Path("data/memory.json")
+MEMORY_FILE = DATA_DIR / "memory.json"
 
 
 def load_memory():

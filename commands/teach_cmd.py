@@ -8,6 +8,8 @@ from brain.teacher import study_topic
 
 def handle_teach(session, topic):
     logger.info(f"/teach {topic}")
+    from core.pending_reflection import clear_pending_reflection
+    clear_pending_reflection()
     result = study_topic(topic)
     set_pending(
         topic=topic,
@@ -36,18 +38,21 @@ def handle_approve(session):
         if old_opinion == new_opinion:
             print("\nМнение не изменилось. Новая версия не сохранена.\n")
             clear_pending_reflection()
+            # НЕ возвращаемся — проверяем pending study ниже
+        else:
+            add_knowledge(
+                topic=pending_reflection["topic"],
+                summary=pending_reflection["summary"],
+                opinion=pending_reflection["new_opinion"],
+                related=pending_reflection.get("related", [])
+            )
+            from core.embeddings import update_topic_embedding
+            text = pending_reflection["topic"] + ". " + pending_reflection["summary"] + ". " + pending_reflection["new_opinion"]
+            update_topic_embedding(pending_reflection["topic"], text)
+            clear_pending_reflection()
+            print("\nНовая версия мнения сохранена.\n")
+            logger.info(f"Рефлексия сохранена: {pending_reflection['topic']}")
             return True
-        add_knowledge(
-            topic=pending_reflection["topic"],
-            summary=pending_reflection["summary"],
-            opinion=pending_reflection["new_opinion"],
-            related=pending_reflection.get("related", [])
-        )
-        ensure_topic_embedding(pending_reflection["topic"])
-        clear_pending_reflection()
-        print("\nНовая версия мнения сохранена.\n")
-        logger.info(f"Рефлексия сохранена: {pending_reflection['topic']}")
-        return True
 
     # Потом проверяем pending study
     pending = load_pending()
@@ -61,7 +66,9 @@ def handle_approve(session):
         opinion=pending["opinion"],
         related=pending.get("related", [])
     )
-    ensure_topic_embedding(pending["topic"])
+    from core.embeddings import update_topic_embedding
+    text = pending["topic"] + ". " + pending["summary"] + ". " + pending["opinion"]
+    update_topic_embedding(pending["topic"], text)
     clear_pending()
     print("\nЗнание сохранено.\n")
     logger.info(f"Знание сохранено: {pending['topic']}")
@@ -71,5 +78,6 @@ def handle_approve(session):
 def handle_reject(session):
     logger.info("/reject")
     clear_pending()
+    clear_pending_reflection()
     print("\nИзучение отменено.\n")
     return True

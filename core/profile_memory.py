@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
 from core.atomic_json import safe_json_load, atomic_json_write
+from core.paths import DATA_DIR
 
-PROFILE_FILE = Path("data/user_profile.json")
+PROFILE_FILE = DATA_DIR / "user_profile.json"
 
 
 def load_profile():

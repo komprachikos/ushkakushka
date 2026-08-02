@@ -1,8 +1,8 @@
 from pathlib import Path
 from core.atomic_json import safe_json_load, atomic_json_write
+from core.paths import MEMORY_DIR
 
-FILE = Path("memory/curiosity.json")
-
+FILE = MEMORY_DIR / "curiosity.json"
 
 def load_curiosity():
     return safe_json_load(FILE, default=[])

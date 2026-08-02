@@ -6,6 +6,8 @@ from brain.reflection_on_topic import reflect_on_topic
 
 def handle_reflect(session, topic):
     logger.info(f"/reflect {topic}")
+    from core.pending_study import clear_pending
+    clear_pending()
     knowledge = get_knowledge(topic)
     if knowledge is None:
         print("\nТема не найдена.\n")

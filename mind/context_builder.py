@@ -14,8 +14,12 @@ def build_internal_thought(topic):
     if knowledge is None:
         return None
 
+    opinions = knowledge.get("opinions", [])
+    if not opinions:
+        return None
+
     return {
         "topic": knowledge["topic"],
         "reason": association["via"],
-        "opinion": knowledge["opinions"][-1]["text"]
+        "opinion": opinions[-1]["text"]
     }

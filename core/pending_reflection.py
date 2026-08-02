@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
 from core.atomic_json import safe_json_load, atomic_json_write
+from core.paths import MEMORY_DIR
 
-FILE = Path("memory/pending_reflection.json")
+FILE = MEMORY_DIR / "pending_reflection.json"
 
 
 def save_pending_reflection(data):

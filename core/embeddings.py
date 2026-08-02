@@ -4,6 +4,7 @@ from sentence_transformers import SentenceTransformer
 from core.atomic_json import safe_json_load, atomic_json_write
 from core.knowledge import load_knowledge
 from core.paths import DATA_DIR
+from config import SIMILARITY_THRESHOLD, TOP_K_SIMILAR
 
 EMBEDDINGS_FILE = DATA_DIR / "embeddings.json"
 MODEL_NAME = "all-MiniLM-L6-v2"
@@ -42,6 +43,12 @@ def ensure_topic_embedding(topic, text=None):
     _save_embeddings(embeddings)
     return embedding
 
+def update_topic_embedding(topic, text):
+    """Принудительно пересчитывает эмбеддинг темы с богатым текстом."""
+    embeddings = _load_embeddings()
+    embeddings[topic] = get_embedding(text)
+    _save_embeddings(embeddings)
+
 def rebuild_index():
     """
     Перестраивает индекс эмбеддингов для всех тем из knowledge.json.
@@ -59,7 +66,7 @@ def rebuild_index():
             text += ". " + opinions[-1]["text"]
         ensure_topic_embedding(item["topic"], text)
 
-def find_similar_topics(query, top_k=5, threshold=0.25):
+def find_similar_topics(query, top_k=TOP_K_SIMILAR, threshold=SIMILARITY_THRESHOLD):
     """
     Находит топ-K тем, ближайших к запросу по смыслу.
     Возвращает список кортежей (topic_name, similarity_score).

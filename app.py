@@ -66,10 +66,6 @@ if prompt := st.chat_input("Напиши сообщение..."):
     with st.chat_message("assistant"):
         st.markdown(answer)
 
-    # Добавляем assistant в session_state только если не было ошибки
-    if answer and not answer.startswith("[ОШИБКА]"):
-        st.session_state.messages.append({"role": "assistant", "content": answer})
-
 with st.sidebar:
     st.header("⚙️ Управление")
     st.session_state.debug_mode = st.toggle("🔍 Режим отладки", value=st.session_state.debug_mode)

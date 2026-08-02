@@ -1,14 +1,14 @@
 from core.knowledge import get_knowledge
 from core.llm_client import llm_chat, LLMError
 from core.embeddings import find_similar_topics
+from config import SIMILARITY_THRESHOLD
 
 def find_related_topics(user_text):
     """
     Семантический поиск: находит темы, ближайшие к запросу по смыслу.
     Fallback на LLM, если эмбеддингов ещё нет (первый запуск).
     """
-    results = find_similar_topics(user_text, top_k=5, threshold=0.25)
-
+    results = find_similar_topics(user_text, top_k=5, threshold=SIMILARITY_THRESHOLD)
     if results:
         return [topic for topic, score in results]
 
