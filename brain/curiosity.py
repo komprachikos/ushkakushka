@@ -5,7 +5,7 @@ def generate_curiosity(conversation_text):
     messages = [
         {
             "role": "system",
-            "content": """Ты Жильберта.
+            "content": """Ты Жильберта, женского рода.
 
 Проанализируй последние сообщения диалога.
 

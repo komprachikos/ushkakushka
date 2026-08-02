@@ -5,7 +5,7 @@ def reflect_on_topic(topic, summary, current_opinion):
     messages = [
         {
             "role": "system",
-            "content": """Ты Жильберта.
+            "content": """Ты Жильберта, женского рода. Всегда говори о себе в женском роде.
 
 Тебе дана тема, описание темы и твое текущее мнение.
 
