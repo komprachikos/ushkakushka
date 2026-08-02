@@ -3,13 +3,12 @@ from pathlib import Path
 from sentence_transformers import SentenceTransformer
 from core.atomic_json import safe_json_load, atomic_json_write
 from core.knowledge import load_knowledge
+from core.paths import DATA_DIR
 
-EMBEDDINGS_FILE = Path("data/embeddings.json")
+EMBEDDINGS_FILE = DATA_DIR / "embeddings.json"
 MODEL_NAME = "all-MiniLM-L6-v2"
 
-# Кэшируем модель на уровне модуля — загружается один раз за процесс
 _model = None
-
 
 def _get_model():
     global _model
@@ -17,37 +16,48 @@ def _get_model():
         _model = SentenceTransformer(MODEL_NAME)
     return _model
 
-
 def _load_embeddings():
     return safe_json_load(EMBEDDINGS_FILE, default={})
 
-
 def _save_embeddings(data):
     atomic_json_write(EMBEDDINGS_FILE, data)
-
 
 def get_embedding(text):
     model = _get_model()
     return model.encode(text).tolist()
 
-
-def ensure_topic_embedding(topic):
-    """Генерирует и сохраняет эмбеддинг для темы, если его ещё нет."""
+def ensure_topic_embedding(topic, text=None):
+    """
+    Генерирует и сохраняет эмбеддинг для темы, если его ещё нет.
+    topic — ключ для хранения.
+    text — строка для эмбеддинга (если None, используется topic).
+    """
     embeddings = _load_embeddings()
     if topic in embeddings:
         return embeddings[topic]
-    embedding = get_embedding(topic)
+    if text is None:
+        text = topic
+    embedding = get_embedding(text)
     embeddings[topic] = embedding
     _save_embeddings(embeddings)
     return embedding
 
-
-def ensure_all_embeddings():
-    """Генерирует эмбеддинги для всех тем из knowledge.json."""
+def rebuild_index():
+    """
+    Перестраивает индекс эмбеддингов для всех тем из knowledge.json.
+    Использует topic + summary + последнее мнение для богатой семантики.
+    Вызывать ОДИН РАЗ при старте приложения.
+    """
     knowledge = load_knowledge()
     for item in knowledge:
-        ensure_topic_embedding(item["topic"])
-
+        text = item["topic"]
+        summary = item.get("summary", "")
+        if summary:
+            text += ". " + summary
+        opinions = item.get("opinions", [])
+        if opinions:
+            text += ". " + opinions[-1]["text"]
+        ensure_topic_embedding(item["topic"], text)
 
 def find_similar_topics(query, top_k=5, threshold=0.25):
     """

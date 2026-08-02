@@ -17,15 +17,18 @@ def dispatch(session, user_text):
     if user_text == "/knowledge":
         return handle_knowledge(session)
     if user_text.startswith("/knowledge "):
-        return handle_knowledge_detail(session, user_text[11:].strip())
+        parts = user_text.split(maxsplit=1)
+        return handle_knowledge_detail(session, parts[1]) if len(parts) > 1 else handle_knowledge(session)
     if user_text.startswith("/teach "):
-        return handle_teach(session, user_text[7:].strip())
+        parts = user_text.split(maxsplit=1)
+        return handle_teach(session, parts[1]) if len(parts) > 1 else True
     if user_text == "/approve":
         return handle_approve(session)
     if user_text == "/reject":
         return handle_reject(session)
     if user_text.startswith("/reflect "):
-        return handle_reflect(session, user_text[9:].strip())
+        parts = user_text.split(maxsplit=1)
+        return handle_reflect(session, parts[1]) if len(parts) > 1 else True
     if user_text == "/brain":
         return handle_brain(session)
     if user_text == "/stats":

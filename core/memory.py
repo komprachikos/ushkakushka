@@ -1,5 +1,6 @@
 from pathlib import Path
 from core.atomic_json import safe_json_load, atomic_json_write
+from config import MAX_HISTORY
 
 MEMORY_FILE = Path("data/memory.json")
 
@@ -9,4 +10,5 @@ def load_memory():
 
 
 def save_memory(messages):
-    atomic_json_write(MEMORY_FILE, messages)
+    # Сохраняем только последние MAX_HISTORY сообщений
+    atomic_json_write(MEMORY_FILE, messages[-MAX_HISTORY:])

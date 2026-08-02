@@ -1,14 +1,12 @@
 from core.knowledge import get_knowledge
 from core.llm_client import llm_chat, LLMError
-from core.embeddings import ensure_all_embeddings, find_similar_topics
-
+from core.embeddings import find_similar_topics
 
 def find_related_topics(user_text):
     """
     Семантический поиск: находит темы, ближайшие к запросу по смыслу.
     Fallback на LLM, если эмбеддингов ещё нет (первый запуск).
     """
-    ensure_all_embeddings()
     results = find_similar_topics(user_text, top_k=5, threshold=0.25)
 
     if results:
@@ -54,7 +52,6 @@ def find_related_topics(user_text):
         if line.strip()
     ]
 
-
 def recall_memories(user_text):
     memories = {
         "facts": [],
@@ -70,46 +67,3 @@ def recall_memories(user_text):
             memories["knowledge"].append(knowledge)
 
     return memories
-
-
-def build_memory_context(memories):
-    parts = []
-
-    if memories["knowledge"]:
-        parts.append("Жильберта вспомнила свои прошлые размышления.")
-
-    for item in memories["knowledge"]:
-        opinions = item.get("opinions", [])
-        if not opinions:
-            continue
-
-        current_opinion = opinions[-1]["text"]
-
-        parts.append(f"""
-Это воспоминание Жильберты.
-
-Раньше она уже долго размышляла об этой теме.
-
-ТЕМА:
-{item['topic']}
-
-Краткое описание:
-
-{item['summary']}
-
-После всех своих размышлений она пришла к следующему мнению:
-
-{current_opinion}
-
-Это мнение уже стало частью её взглядов.
-
-Если во время разговора возникает эта тема,
-Жильберта сначала вспоминает именно это мнение,
-а затем уже может дополнить его новыми мыслями,
-если для этого действительно появились основания.
-
-Иначе она просто отвечает так,
-как человек, который уже давно сформировал своё мнение.
-""")
-
-    return "\n".join(parts)

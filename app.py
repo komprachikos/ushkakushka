@@ -1,17 +1,19 @@
 import streamlit as st
 from config import MODEL
-from core.llm_client import llm_chat, LLMError
+from core.llm_client import LLMError
 from core.memory import load_memory, save_memory
 from core.prompts_builder import build_system_prompt
 from core.chat_engine import process_message
+from core.embeddings import rebuild_index
+
+rebuild_index()
 
 st.set_page_config(page_title="Жильберта", page_icon="🤖", layout="centered")
 
-
-@st.cache_resource
 def get_system_prompt():
+    # Без @st.cache_resource — build_system_prompt сам кэширует personality.txt
+    # и читает актуальный профиль из диска
     return build_system_prompt()
-
 
 st.title("🤖 Жильберта")
 st.caption("Локальный ИИ с собственной внутренней моделью мышления")
@@ -20,6 +22,8 @@ if "messages" not in st.session_state:
     saved = load_memory() or []
     st.session_state.messages = [{"role": "system", "content": get_system_prompt()}]
     st.session_state.messages.extend([m for m in saved if m.get("role") in ("user", "assistant")])
+    # Счётчик = количество сохранённых user/assistant сообщений
+    st.session_state.message_counter = len([m for m in saved if m.get("role") in ("user", "assistant")])
 
 if "debug_mode" not in st.session_state:
     st.session_state.debug_mode = False
@@ -32,29 +36,39 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 if prompt := st.chat_input("Напиши сообщение..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    # НЕ добавляем user-сообщение здесь — process_message сделает это сам
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.spinner("Жильберта думает..."):
         try:
-            answer, st.session_state.messages, state, state_text, full_system_prompt = process_message(
-                st.session_state.messages, prompt
+            answer, updated_messages, state, state_text, full_system_prompt, new_counter, reflection, curiosity = process_message(
+                st.session_state.messages, prompt, st.session_state.message_counter
             )
+            st.session_state.messages = updated_messages
+            st.session_state.message_counter = new_counter
+            st.session_state.last_state = state
+            st.session_state.last_state_text = state_text
+            st.session_state.last_full_prompt = full_system_prompt
+
+            # Показываем reflection/curiosity как info-блоки
+            if reflection:
+                st.info(f"💭 Размышление Жильберты: {reflection}")
+            if curiosity:
+                st.info(f"🔍 Жильберта заинтересовалась: **{curiosity['topic']}** — {curiosity['reason']}")
+
         except LLMError as e:
             answer = f"[ОШИБКА] {e}"
-            state = {}
-            state_text = ""
-            full_system_prompt = ""
-
-    st.session_state.last_state = state
-    st.session_state.last_state_text = state_text
-    st.session_state.last_full_prompt = full_system_prompt
+            st.session_state.last_state = {}
+            st.session_state.last_state_text = ""
+            st.session_state.last_full_prompt = ""
 
     with st.chat_message("assistant"):
         st.markdown(answer)
 
-    st.session_state.messages.append({"role": "assistant", "content": answer})
+    # Добавляем assistant в session_state только если не было ошибки
+    if answer and not answer.startswith("[ОШИБКА]"):
+        st.session_state.messages.append({"role": "assistant", "content": answer})
 
 with st.sidebar:
     st.header("⚙️ Управление")
@@ -64,6 +78,7 @@ with st.sidebar:
 
     if st.button("🗑 Очистить диалог"):
         st.session_state.messages = [{"role": "system", "content": get_system_prompt()}]
+        st.session_state.message_counter = 0
         for key in ("last_state", "last_state_text", "last_full_prompt"):
             st.session_state.pop(key, None)
         save_memory([])
@@ -71,7 +86,7 @@ with st.sidebar:
 
     st.divider()
     st.caption(f"Модель: {MODEL}")
-    st.caption(f"Сообщений: {len([m for m in st.session_state.messages if m['role'] != 'system'])}")
+    st.caption(f"Сообщений: {st.session_state.message_counter}")
 
     if st.session_state.debug_mode:
         st.divider()

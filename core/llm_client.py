@@ -1,12 +1,14 @@
 from ollama import chat
-from config import MODEL
+from config import MODEL, TEMPERATURE
 
 
 class LLMError(Exception):
     pass
 
 
-def llm_chat(messages, temperature=0.7):
+def llm_chat(messages, temperature=None):
+    if temperature is None:
+        temperature = TEMPERATURE
     try:
         response = chat(
             model=MODEL,
