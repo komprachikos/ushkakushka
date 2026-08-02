@@ -1,49 +1,36 @@
 from core.knowledge import get_topics, get_knowledge
-from ollama import chat
-from config import MODEL
+from core.llm_client import llm_chat, LLMError
 
 
 def find_related_topics(user_text):
-
     topics = get_topics()
-
     if not topics:
         return []
 
     topics_text = "\n".join(topics)
 
-    response = chat(
-        model=MODEL,
-        messages=[
-            {
-                "role": "system",
-                "content": f"""
-Ты анализатор памяти.
+    messages = [
+        {
+            "role": "system",
+            "content": """Ты анализатор памяти.
 
-Сообщение пользователя:
+Тебе дан список тем из долгосрочной памяти.
 
-{user_text}
+Выбери темы, которые относятся к сообщению пользователя.
 
-Из списка тем:
+Если подходящих нет — ответь: NONE
+Если есть — верни только названия тем, по одной на строку."""
+        },
+        {
+            "role": "user",
+            "content": f"Сообщение пользователя:\n{user_text}\n\nСписок тем:\n{topics_text}"
+        }
+    ]
 
-{topics_text}
-
-Выбери темы, которые относятся к сообщению.
-
-Если подходящих нет:
-
-NONE
-
-Если есть:
-
-Верни только названия тем.
-По одной на строку.
-"""
-            }
-        ]
-    )
-
-    result = response.message.content.strip()
+    try:
+        result = llm_chat(messages)
+    except LLMError:
+        return []
 
     if result == "NONE":
         return []
@@ -56,7 +43,6 @@ NONE
 
 
 def recall_memories(user_text):
-
     memories = {
         "facts": [],
         "thoughts": [],
@@ -66,37 +52,27 @@ def recall_memories(user_text):
     topics = find_related_topics(user_text)
 
     for topic in topics:
-
         knowledge = get_knowledge(topic)
-
         if knowledge:
-
-            memories["knowledge"].append(
-                knowledge
-            )
+            memories["knowledge"].append(knowledge)
 
     return memories
 
 
 def build_memory_context(memories):
-
     parts = []
 
     if memories["knowledge"]:
+        parts.append("Жильберта вспомнила свои прошлые размышления.")
 
-        parts.append(
-            "Жильберта вспомнила свои прошлые размышления."
-        )
+    for item in memories["knowledge"]:
+        opinions = item.get("opinions", [])
+        if not opinions:
+            continue
 
-        for item in memories["knowledge"]:
+        current_opinion = opinions[-1]["text"]
 
-            if not item["opinions"]:
-                continue
-
-            current_opinion = item["opinions"][-1]["text"]
-
-            parts.append(
-                f"""
+        parts.append(f"""
 Это воспоминание Жильберты.
 
 Раньше она уже долго размышляла об этой теме.
@@ -121,7 +97,6 @@ def build_memory_context(memories):
 
 Иначе она просто отвечает так,
 как человек, который уже давно сформировал своё мнение.
-"""
-            )
+""")
 
     return "\n".join(parts)

@@ -1,25 +1,18 @@
-from ollama import chat
-
-from config import MODEL
+from core.llm_client import llm_chat, LLMError
 
 
 def study_topic(topic):
-
-    response = chat(
-        model=MODEL,
-        messages=[
-            {
-                "role": "system",
-                "content": """
-Ты Жильберта.
+    messages = [
+        {
+            "role": "system",
+            "content": """Ты Жильберта.
 
 Изучи тему.
 
 Нужно:
-
 1. Кратко объяснить тему.
 2. Сформировать собственное предварительное мнение.
-3. 3. Назови 5–10 связанных понятий.
+3. Назови 5–10 связанных понятий.
 
 Очень важно.
 
@@ -27,7 +20,6 @@ def study_topic(topic):
 и в других темах.
 
 Предпочитай:
-
 - философские идеи;
 - научные области;
 - фундаментальные понятия;
@@ -36,7 +28,6 @@ def study_topic(topic):
 - большие вопросы.
 
 Избегай:
-
 - слишком редких терминов;
 - имен собственных;
 - случайных деталей.
@@ -61,7 +52,6 @@ def study_topic(topic):
 Ассоциации должны быть короткими.
 
 Это могут быть:
-
 - идеи;
 - эмоции;
 - области знаний;
@@ -80,43 +70,31 @@ RELATED:
 понятие 1
 понятие 2
 понятие 3
-...
-"""
-            },
-            {
-                "role": "user",
-                "content": topic
-            }
-        ]
-    )
+..."""
+        },
+        {
+            "role": "user",
+            "content": topic
+        }
+    ]
 
-    text = response.message.content
+    try:
+        text = llm_chat(messages)
+    except LLMError:
+        return {"summary": "", "opinion": "", "related": []}
 
     summary = ""
     opinion = ""
     related = []
 
     if "SUMMARY:" in text:
-        summary = (
-            text.split("SUMMARY:")[1]
-            .split("OPINION:")[0]
-            .strip()
-        )
+        summary = text.split("SUMMARY:")[1].split("OPINION:")[0].strip()
 
     if "OPINION:" in text:
-        opinion = (
-            text.split("OPINION:")[1]
-            .split("RELATED:")[0]
-            .strip()
-        )
+        opinion = text.split("OPINION:")[1].split("RELATED:")[0].strip()
 
     if "RELATED:" in text:
-
-        related_text = (
-            text.split("RELATED:")[1]
-            .strip()
-        )
-
+        related_text = text.split("RELATED:")[1].strip()
         related = [
             line.strip("-• ").strip()
             for line in related_text.splitlines()

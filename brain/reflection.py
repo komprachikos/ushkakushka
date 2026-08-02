@@ -1,16 +1,11 @@
-from ollama import chat
-
-from config import MODEL
+from core.llm_client import llm_chat, LLMError
 
 
 def generate_reflection(conversation_text):
-    response = chat(
-        model=MODEL,
-        messages=[
-            {
-                "role": "system",
-                "content": """
-Ты анализируешь разговор. Делай ТОЛЬКО объективные и осторожные выводы.
+    messages = [
+        {
+            "role": "system",
+            "content": """Ты анализируешь разговор. Делай ТОЛЬКО объективные и осторожные выводы.
 
 Разрешено:
 - Замечать повторяющиеся темы и прямые интересы
@@ -23,14 +18,15 @@ def generate_reflection(conversation_text):
 
 Если надёжного факта нет — отвечай ровно: NONE
 
-Отвечай одной короткой строкой.
-"""
-            },
-            {
-                "role": "user",
-                "content": conversation_text
-            }
-        ]
-    )
+Отвечай одной короткой строкой."""
+        },
+        {
+            "role": "user",
+            "content": conversation_text
+        }
+    ]
 
-    return response.message.content.strip()
+    try:
+        return llm_chat(messages)
+    except LLMError:
+        return "NONE"

@@ -1,16 +1,11 @@
-from ollama import chat
-
-from config import MODEL
+from core.llm_client import llm_chat, LLMError
 
 
 def extract_fact(user_text):
-    response = chat(
-        model=MODEL,
-        messages=[
-            {
-                "role": "system",
-                "content": """
-Ты анализатор памяти.
+    messages = [
+        {
+            "role": "system",
+            "content": """Ты анализатор памяти.
 
 Нужно сохранять ТОЛЬКО долговременную информацию о пользователе.
 
@@ -53,12 +48,6 @@ def extract_fact(user_text):
 NONE
 
 Сообщение:
-Я хожу боком
-
-Ответ:
-NONE
-
-Сообщение:
 Я пью кофе каждое утро
 
 Ответ:
@@ -69,17 +58,18 @@ NONE
 Ответ:
 NONE
 
-Отвечай только фактом или NONE.
-"""
-            },
-            {
-                "role": "user",
-                "content": user_text
-            }
-        ]
-    )
+Отвечай только фактом или NONE."""
+        },
+        {
+            "role": "user",
+            "content": user_text
+        }
+    ]
 
-    fact = response.message.content.strip()
+    try:
+        fact = llm_chat(messages)
+    except LLMError:
+        return "NONE"
 
     if "\n" in fact:
         return "NONE"
