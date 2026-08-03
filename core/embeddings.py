@@ -49,21 +49,34 @@ def update_topic_embedding(topic, text):
     embeddings[topic] = get_embedding(text)
     _save_embeddings(embeddings)
 
+def build_embedding_text(topic, summary="", opinion=""):
+    """Собирает богатый текст для эмбеддинга из компонентов темы."""
+    parts = [topic]
+    if summary:
+        parts.append(summary)
+    if opinion:
+        parts.append(opinion)
+    return ". ".join(parts)
+
+def build_embedding_text(topic, summary="", opinion=""):
+    """Собирает богатый текст для эмбеддинга из компонентов темы."""
+    parts = [topic]
+    if summary:
+        parts.append(summary)
+    if opinion:
+        parts.append(opinion)
+    return ". ".join(parts)
+
 def rebuild_index():
-    """
-    Перестраивает индекс эмбеддингов для всех тем из knowledge.json.
-    Использует topic + summary + последнее мнение для богатой семантики.
-    Вызывать ОДИН РАЗ при старте приложения.
-    """
     knowledge = load_knowledge()
     for item in knowledge:
-        text = item["topic"]
-        summary = item.get("summary", "")
-        if summary:
-            text += ". " + summary
         opinions = item.get("opinions", [])
-        if opinions:
-            text += ". " + opinions[-1]["text"]
+        last_opinion = opinions[-1]["text"] if opinions else ""
+        text = item["topic"]
+        if item.get("summary"):
+            text += ". " + item["summary"]
+        if last_opinion:
+            text += ". " + last_opinion
         ensure_topic_embedding(item["topic"], text)
 
 def find_similar_topics(query, top_k=TOP_K_SIMILAR, threshold=SIMILARITY_THRESHOLD):

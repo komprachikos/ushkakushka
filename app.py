@@ -6,7 +6,12 @@ from core.prompts_builder import build_system_prompt
 from core.chat_engine import process_message
 from core.embeddings import rebuild_index
 
-rebuild_index()
+@st.cache_resource
+def _init_embeddings():
+    rebuild_index()
+    return True
+
+_init_embeddings()
 
 st.set_page_config(page_title="Жильберта", page_icon="🤖", layout="centered")
 
@@ -108,18 +113,10 @@ with st.sidebar:
                 if thoughts:
                     for t in thoughts:
                         st.write(f"**Тема:** {t.get('topic', '')}")
-                        st.write(f"**Мысль:** {t.get('thought', '')}")
+                        st.write(f"**Мысль:** {t.get('opinion', '')}")
                         st.divider()
                 else:
                     st.write("Нет временных мыслей")
-
-            with st.expander("📝 Наблюдения за собеседником", expanded=False):
-                observations = state.get("observations", [])
-                if observations:
-                    for obs in observations:
-                        st.write(f"• {obs.get('text', '')}")
-                else:
-                    st.write("Нет наблюдений")
 
             with st.expander("📄 Полный промпт для модели", expanded=False):
                 st.code(st.session_state.last_full_prompt, language="text")
