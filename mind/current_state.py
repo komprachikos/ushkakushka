@@ -6,7 +6,7 @@ from core.journal import get_recent_thoughts
 from core.curiosity import load_curiosity
 
 
-def build_current_state(user_text):
+def build_current_state(user_text, conflict_topic=None):
     memories = recall_memories(user_text)
 
     state = {
@@ -52,14 +52,20 @@ def build_current_state(user_text):
                 "opinion": opinions[-1]["text"]
             })
 
-    # ЗАМЫКАЕМ РЕФЛЕКСИЮ: читаем, что агент думал раньше
+    # Замыкаем рефлексию и любопытство
+    from core.journal import get_recent_thoughts
+    from core.curiosity import load_curiosity
+
     recent_reflections = get_recent_thoughts(2)
     if recent_reflections:
         state["recent_reflections"] = recent_reflections
 
-    # ЗАМЫКАЕМ ЛЮБОПЫТСТВО: читаем, что агенту интересно
     curiosity_list = load_curiosity()
     if curiosity_list:
         state["active_curiosity"] = curiosity_list[0]
+
+    # АВТО-КОНФЛИКТ — теперь здесь, до render_state
+    if conflict_topic:
+        state["conflict_topic"] = conflict_topic
 
     return state

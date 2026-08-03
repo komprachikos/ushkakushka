@@ -48,8 +48,36 @@ def process_message(messages, user_text, message_counter=0):
     message_counter += 1
     logger.debug(f"Счётчик: {message_counter}")
 
+    # АВТО-КОНФЛИКТ: проверяем, не противоречит ли пользователь своим убеждениям
+    conflict_topic = None
+    recent_user_text = "\n".join(
+        m["content"] for m in local_messages[-10:] if m["role"] == "user"
+    )
+    if recent_user_text:
+        from core.embeddings import find_similar_topics, get_embedding
+        from core.knowledge import get_current_opinion
+        from config import TOP_K_SIMILAR, SIMILARITY_THRESHOLD
+        import numpy as np
+        
+        similar = find_similar_topics(recent_user_text, top_k=TOP_K_SIMILAR, threshold=SIMILARITY_THRESHOLD)
+        if similar:
+            user_emb = np.array(get_embedding(recent_user_text))
+            for topic, score in similar:
+                opinion = get_current_opinion(topic)
+                if not opinion:
+                    continue
+                opinion_emb = np.array(get_embedding(opinion["text"]))
+                cos = float(
+                    np.dot(user_emb, opinion_emb) /
+                    (np.linalg.norm(user_emb) * np.linalg.norm(opinion_emb))
+                )
+                if cos < 0.35:
+                    conflict_topic = topic
+                    logger.info(f"Конфликт мнений: {topic} (cos={cos:.2f})")
+                    break
+
     # 4. Строим текущее состояние
-    state = build_current_state(user_text)
+    state = build_current_state(user_text, conflict_topic=conflict_topic)
     memory_context = render_state(state)
 
     # 5. Собираем единый system prompt в начало
@@ -119,6 +147,8 @@ def process_message(messages, user_text, message_counter=0):
 
     if message_counter % REFLECTION_INTERVAL == 0:
         logger.info("Триггер рефлексии")
+        from core.profile_memory import consolidate_facts
+        consolidate_facts()
         recent_messages = local_messages[-20:]
         conversation_text = "\n".join(
             f"{msg['role']}: {msg['content']}" for msg in recent_messages
