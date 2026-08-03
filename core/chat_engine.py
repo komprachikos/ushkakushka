@@ -90,6 +90,33 @@ def process_message(messages, user_text, message_counter=0):
     reflection_thought = None
     curiosity_item = None
 
+        # АВТО-РЕФЛЕКСИЯ: проверяем, не противоречит ли пользователь своим убеждениям
+    from core.embeddings import find_similar_topics, get_embedding
+    from core.knowledge import get_current_opinion
+    import numpy as np
+
+    recent_user_text = "\n".join(
+        m["content"] for m in local_messages[-10:] if m["role"] == "user"
+    )
+    if recent_user_text:
+        similar = find_similar_topics(recent_user_text, top_k=3, threshold=0.4)
+        for topic, score in similar:
+            opinion = get_current_opinion(topic)
+            if not opinion:
+                continue
+            
+            user_emb = np.array(get_embedding(recent_user_text))
+            opinion_emb = np.array(get_embedding(opinion["text"]))
+            cos = float(
+                np.dot(user_emb, opinion_emb) /
+                (np.linalg.norm(user_emb) * np.linalg.norm(opinion_emb))
+            )
+            
+            if cos < 0.35:  # пользователь говорит что-то сильно другое
+                state["conflict_topic"] = topic
+                logger.info(f"Конфликт мнений: {topic} (cos={cos:.2f})")
+                break  # один конфликт за раз
+
     if message_counter % REFLECTION_INTERVAL == 0:
         logger.info("Триггер рефлексии")
         recent_messages = local_messages[-20:]

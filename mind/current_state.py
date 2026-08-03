@@ -2,11 +2,13 @@ from brain.recall import recall_memories
 from mind.context_builder import build_internal_thought
 from mind.associations import get_related_topics
 from core.knowledge import get_knowledge
+from core.journal import get_recent_thoughts
+from core.curiosity import load_curiosity
 
 
 def build_current_state(user_text):
     memories = recall_memories(user_text)
-    
+
     state = {
         "focus": None,
         "beliefs": [],
@@ -20,10 +22,13 @@ def build_current_state(user_text):
 
         # Добавляем убеждения
         for item in memories["knowledge"]:
+            opinions = item.get("opinions", [])
+            if not opinions:
+                continue
             state["beliefs"].append({
                 "topic": item["topic"],
-                "summary": item["summary"],
-                "opinion": item["opinions"][-1]["text"]
+                "summary": item.get("summary", ""),
+                "opinion": opinions[-1]["text"]
             })
 
         # Основная внутренняя мысль
@@ -31,16 +36,30 @@ def build_current_state(user_text):
         if thought:
             state["thoughts"].append(thought)
 
-        # Добавляем связанные темы через related (это важно!)
+        # Добавляем связанные темы через related
         related_items = get_related_topics(state["focus"])
-        
-        for rel in related_items[:2]:  # берём максимум 2 связанные темы
+
+        for rel in related_items[:2]:
             knowledge = get_knowledge(rel["topic"])
-            if knowledge and knowledge["opinions"]:
-                state["thoughts"].append({
-                    "topic": knowledge["topic"],
-                    "reason": rel["via"],
-                    "opinion": knowledge["opinions"][-1]["text"]
-                })
+            if knowledge is None:
+                continue
+            opinions = knowledge.get("opinions", [])
+            if not opinions:
+                continue
+            state["thoughts"].append({
+                "topic": knowledge["topic"],
+                "reason": rel.get("via", "ассоциация"),
+                "opinion": opinions[-1]["text"]
+            })
+
+    # ЗАМЫКАЕМ РЕФЛЕКСИЮ: читаем, что агент думал раньше
+    recent_reflections = get_recent_thoughts(2)
+    if recent_reflections:
+        state["recent_reflections"] = recent_reflections
+
+    # ЗАМЫКАЕМ ЛЮБОПЫТСТВО: читаем, что агенту интересно
+    curiosity_list = load_curiosity()
+    if curiosity_list:
+        state["active_curiosity"] = curiosity_list[0]
 
     return state
