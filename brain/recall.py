@@ -1,45 +1,73 @@
-from core.knowledge import get_knowledge
-from core.llm_client import llm_chat, LLMError
 from core.embeddings import find_similar_topics
-from config import SIMILARITY_THRESHOLD, TOP_K_SIMILAR
+from core.knowledge import (
+    get_knowledge,
+    get_topics,
+)
+from core.llm_client import LLMError, llm_chat
 
-def find_related_topics(user_text):
-    """
-    Семантический поиск: находит темы, ближайшие к запросу по смыслу.
-    Fallback на LLM, если эмбеддингов ещё нет (первый запуск).
-    """
-    results = find_similar_topics(user_text, top_k=TOP_K_SIMILAR, threshold=SIMILARITY_THRESHOLD)
-    if results:
-        return [topic for topic, score in results]
+from config import (
+    SIMILARITY_THRESHOLD,
+    TOP_K_SIMILAR,
+)
 
-    # Fallback: если ничего не нашли, спрашиваем LLM
-    from core.knowledge import get_topics
-    topics = get_topics()
-    if not topics:
-        return []
 
-    topics_text = "\n".join(topics)
-
-    messages = [
-        {
-            "role": "system",
-            "content": """Ты Жильберта, женского рода. Ты анализатор памяти.
+SYSTEM_PROMPT = """Ты Жильберта, женского рода. Ты анализатор памяти.
 
 Тебе дан список тем из долгосрочной памяти.
 
 Выбери темы, которые относятся к сообщению пользователя.
 
-Если подходящих нет — ответь: NONE
-Если есть — верни только названия тем, по одной на строку."""
+Если подходящих нет — ответь:
+
+NONE
+
+Если есть — верни только названия тем,
+по одной теме на строку.
+"""
+
+
+def find_related_topics(user_text: str) -> list[str]:
+    """
+    Возвращает темы памяти, связанные с сообщением пользователя.
+    Сначала используется поиск по эмбеддингам,
+    затем — LLM как резервный вариант.
+    """
+
+    similar_topics = find_similar_topics(
+        user_text,
+        top_k=TOP_K_SIMILAR,
+        threshold=SIMILARITY_THRESHOLD,
+    )
+
+    if similar_topics:
+        return [
+            topic
+            for topic, _ in similar_topics
+        ]
+
+    topics = get_topics()
+
+    if not topics:
+        return []
+
+    messages = [
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT,
         },
         {
             "role": "user",
-            "content": f"Сообщение пользователя:\n{user_text}\n\nСписок тем:\n{topics_text}"
-        }
+            "content": (
+                f"Сообщение пользователя:\n{user_text}"
+                f"\n\nСписок тем:\n"
+                + "\n".join(topics)
+            ),
+        },
     ]
 
     try:
-        result = llm_chat(messages)
+        result = llm_chat(messages).strip()
+
     except LLMError:
         return []
 
@@ -52,17 +80,21 @@ def find_related_topics(user_text):
         if line.strip()
     ]
 
-def recall_memories(user_text):
+
+def recall_memories(user_text: str) -> dict:
+    """
+    Возвращает релевантные воспоминания.
+    """
+
     memories = {
         "facts": [],
         "thoughts": [],
-        "knowledge": []
+        "knowledge": [],
     }
 
-    topics = find_related_topics(user_text)
-
-    for topic in topics:
+    for topic in find_related_topics(user_text):
         knowledge = get_knowledge(topic)
+
         if knowledge:
             memories["knowledge"].append(knowledge)
 

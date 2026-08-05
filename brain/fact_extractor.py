@@ -1,11 +1,7 @@
-from core.llm_client import llm_chat, LLMError
+from core.llm_client import LLMError, llm_chat
 
 
-def extract_fact(user_text):
-    messages = [
-        {
-            "role": "system",
-            "content": """Ты Жильберта, женского рода. Ты анализатор памяти.
+SYSTEM_PROMPT = """Ты Жильберта, женского рода. Ты анализатор памяти.
 
 Нужно сохранять ТОЛЬКО долговременную информацию о пользователе.
 
@@ -53,28 +49,44 @@ NONE
 Ответ:
 Пользователь пьет кофе каждое утро
 
-Если полезного долгосрочного факта нет:
+Если полезного долгосрочного факта нет, ответь:
 
-Ответ:
 NONE
 
-Отвечай только фактом или NONE."""
+Отвечай только фактом или NONE.
+"""
+
+
+MAX_FACT_LENGTH = 120
+
+
+def extract_fact(user_text: str) -> str:
+    """
+    Извлекает долговременный факт о пользователе.
+    """
+
+    messages = [
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT,
         },
         {
             "role": "user",
-            "content": user_text
-        }
+            "content": user_text,
+        },
     ]
 
     try:
-        fact = llm_chat(messages)
+        fact = llm_chat(messages).strip()
+
     except LLMError:
         return "NONE"
 
-    if "\n" in fact:
-        return "NONE"
-
-    if len(fact) > 120:
+    if (
+        not fact
+        or "\n" in fact
+        or len(fact) > MAX_FACT_LENGTH
+    ):
         return "NONE"
 
     return fact

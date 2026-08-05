@@ -1,18 +1,15 @@
-from core.llm_client import llm_chat, LLMError
+from core.llm_client import LLMError, llm_chat
 
 
-def study_topic(topic):
-    messages = [
-        {
-            "role": "system",
-            "content": """Ты Жильберта, женского рода. Всегда говори о себе в женском роде.
+SYSTEM_PROMPT = """Ты Жильберта, женского рода. Всегда говори о себе в женском роде.
 
 Изучи тему.
 
 Нужно:
+
 1. Кратко объяснить тему.
 2. Сформировать собственное предварительное мнение.
-3. Назови 5–10 связанных понятий.
+3. Назвать 5–10 связанных понятий.
 
 Очень важно.
 
@@ -20,6 +17,7 @@ def study_topic(topic):
 и в других темах.
 
 Предпочитай:
+
 - философские идеи;
 - научные области;
 - фундаментальные понятия;
@@ -28,6 +26,7 @@ def study_topic(topic):
 - большие вопросы.
 
 Избегай:
+
 - слишком редких терминов;
 - имен собственных;
 - случайных деталей.
@@ -52,6 +51,7 @@ def study_topic(topic):
 Ассоциации должны быть короткими.
 
 Это могут быть:
+
 - идеи;
 - эмоции;
 - области знаний;
@@ -69,40 +69,80 @@ OPINION:
 RELATED:
 понятие 1
 понятие 2
-понятие 3
-..."""
+...
+"""
+
+
+def study_topic(topic: str) -> dict:
+    """
+    Изучает новую тему и возвращает:
+    - краткое описание;
+    - предварительное мнение;
+    - связанные понятия.
+    """
+
+    messages = [
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT,
         },
         {
             "role": "user",
-            "content": topic
-        }
+            "content": topic,
+        },
     ]
 
     try:
-        text = llm_chat(messages)
+        text = llm_chat(messages).strip()
+
     except LLMError:
-        return {"summary": "", "opinion": "", "related": []}
+        return {
+            "summary": "",
+            "opinion": "",
+            "related": [],
+        }
 
     summary = ""
     opinion = ""
     related = []
 
-    if "SUMMARY:" in text:
-        summary = text.split("SUMMARY:")[1].split("OPINION:")[0].strip()
+    current_section = None
 
-    if "OPINION:" in text:
-        opinion = text.split("OPINION:")[1].split("RELATED:")[0].strip()
+    for line in text.splitlines():
+        line = line.strip()
 
-    if "RELATED:" in text:
-        related_text = text.split("RELATED:")[1].strip()
-        related = [
-            line.strip("-• ").strip()
-            for line in related_text.splitlines()
-            if line.strip()
-        ]
+        if line == "SUMMARY:":
+            current_section = "summary"
+            continue
+
+        if line == "OPINION:":
+            current_section = "opinion"
+            continue
+
+        if line == "RELATED:":
+            current_section = "related"
+            continue
+
+        if not line:
+            continue
+
+        if current_section == "summary":
+            if summary:
+                summary += "\n"
+            summary += line
+
+        elif current_section == "opinion":
+            if opinion:
+                opinion += "\n"
+            opinion += line
+
+        elif current_section == "related":
+            related.append(
+                line.lstrip("-• ").strip()
+            )
 
     return {
         "summary": summary,
         "opinion": opinion,
-        "related": related
+        "related": related,
     }
